@@ -3,7 +3,7 @@ package com.tinybank.api.config;
 import com.tinybank.api.domain.User;
 import com.tinybank.api.domain.Wallet;
 import com.tinybank.api.repository.UserRepository;
-import com.tinybank.api.service.TransferService;
+import com.tinybank.api.service.TransactionService;
 import jakarta.transaction.Transactional; // <--- Importante
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
@@ -16,7 +16,7 @@ import java.math.BigDecimal;
 @RequiredArgsConstructor
 public class DataInitializer {
 
-    private final TransferService transferService;
+    private final TransactionService transactionService;
     private final UserRepository userRepository;
 
     @Bean
@@ -24,7 +24,7 @@ public class DataInitializer {
         return new CommandLineRunner() {
 
             @Override
-            @Transactional // <--- MANTÉM A CONEXÃO ABERTA ATÉ O FIM DO PRINT
+            @Transactional
             public void run(String... args) throws Exception {
                 System.out.println("============== INICIANDO O SMOKE TEST ==============");
 
@@ -37,8 +37,8 @@ public class DataInitializer {
 
                 Wallet carteiraJoao = new Wallet();
                 carteiraJoao.setBalance(new BigDecimal("100.00"));
-                carteiraJoao.setUser(joao); // Preenche lado inverso
-                joao.setWallet(carteiraJoao); // Preenche lado dono (User manda na relação)
+                carteiraJoao.setUser(joao);
+                joao.setWallet(carteiraJoao);
 
                 userRepository.save(joao);
                 System.out.println("✅ João criado com saldo: " + joao.getWallet().getBalance());
@@ -58,7 +58,7 @@ public class DataInitializer {
 
                 // 3. Transfere
                 System.out.println("💸 Transferindo R$ 40.00 do João para Maria...");
-                transferService.transfer(joao.getWallet().getId(), maria.getWallet().getId(), new BigDecimal("40.00"));
+                transactionService.transfer(joao.getWallet().getId(), maria.getWallet().getId(), new BigDecimal("40.00"));
 
                 // 4. Valida
                 User joaoFinal = userRepository.findById(joao.getId()).get();

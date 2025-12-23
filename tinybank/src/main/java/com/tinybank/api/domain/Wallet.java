@@ -19,4 +19,20 @@ public class Wallet {
 
     @OneToOne(mappedBy = "wallet")
     private User user;
+
+    public void debit(BigDecimal amount) {
+        if (this.balance.compareTo(amount) < 0) {
+            throw new IllegalArgumentException("Saldo insuficiente");
+        }
+
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Valor deve ser maior que zero");
+        }
+
+        this.balance = this.balance.subtract(amount);
+    }
+
+    public void credit(BigDecimal amount) {
+        this.balance = this.balance.add(amount);
+    }
 }

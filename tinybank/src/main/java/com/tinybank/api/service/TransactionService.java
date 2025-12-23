@@ -1,6 +1,7 @@
 package com.tinybank.api.service;
 
 import com.tinybank.api.domain.Transaction;
+import com.tinybank.api.domain.User;
 import com.tinybank.api.domain.Wallet;
 import com.tinybank.api.repository.TransactionRepository;
 import com.tinybank.api.repository.UserRepository;
@@ -14,7 +15,7 @@ import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
-public class TransferService {
+public class TransactionService {
 
     private final UserRepository userRepository;
     private final WalletRepository walletRepository;
@@ -23,36 +24,23 @@ public class TransferService {
     @Transactional
     public void transfer(Long payerId, Long payeeId, BigDecimal amount) {
 
+        User payer = userRepository.findById(payerId)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-        Wallet payer = walletRepository.findById(payerId)
-                .orElseThrow(() -> new RuntimeException("Pagador não encontrado"));
-
-        Wallet payee = walletRepository.findById(payeeId)
-                .orElseThrow(() -> new RuntimeException("Recebedor não encontrado"));
+        User payee = userRepository.findById(payeeId)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
         if (payer.equals(payee)) {
             throw new IllegalArgumentException("Não pode transferir para si mesmo");
         }
 
-        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Valor deve ser maior que zero");
-        }
-
-        if (payer.getBalance().compareTo(amount) < 0) {
-            throw new IllegalArgumentException("Saldo insuficiente");
-        }
-
-        payer.setBalance(payer.getBalance().subtract(amount));
-        payee.setBalance(payee.getBalance().add(amount));
-
-        walletRepository.save(payer);
-        walletRepository.save(payee);
-
+        payer.getWallet().debit(amount);
+        payee.getWallet().credit(amount);
 
         Transaction transaction = Transaction.builder()
                 .transactionAmount(amount)
-                .sender(payer)
-                .receiver(payee)
+                .sender(payer.getWallet())
+                .receiver(payee.getWallet())
                 .transactionDate(LocalDateTime.now())
                 .build();
 
